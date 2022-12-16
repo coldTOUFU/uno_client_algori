@@ -8,3 +8,6 @@ out/
 .history/
 .vscode/
 *.code-workspace
+
+# node.js
+node_modules/
