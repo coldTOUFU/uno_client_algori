@@ -50,13 +50,13 @@ export namespace UnoClient {
     public testSendAll() {
       assert(this.isConnectionTestMode);
       this.joinRoom();
-      this.sendPlayDrawCard() 
-      this.sendColorOfWild() 
-      this.sendChallenge() 
-      this.sendDrawCard() 
-      this.sendSayUnoAndPlayCard() 
-      this.sendSayUnoAndPlayDrawCard() 
-      this.sendPlayCard() 
+      this.sendPlayDrawCard();
+      this.sendColorOfWild();
+      this.sendChallenge(true);
+      this.sendDrawCard();
+      this.sendSayUnoAndPlayCard();
+      this.sendSayUnoAndPlayDrawCard();
+      this.sendPlayCard();
     }
 
     /* 対戦用。対戦部屋に入る。 */
@@ -73,7 +73,7 @@ export namespace UnoClient {
                        (_: any, respond_msg: UnoConsts.Event.Message.Response.JoinRoom) => {
         if (isDebugMode) {
           console.log("[Respond] join-room");
-          console.log(sending_msg);
+          console.log(respond_msg);
         }
         this.myPlayerID = respond_msg.your_id;
         this.player.onRespondJoinRoom(respond_msg);
@@ -220,10 +220,15 @@ export namespace UnoClient {
         }
         this.player.onReceivedNextPlayer(msg);
 
+        /* ワイルドドロー4でカードを引かされる場合 → チャレンジ。 */
         if (msg.draw_reason === UnoConsts.DrawReason.WildDraw4) {
-          /* ワイルドドロー4でカードを引かされる場合 → チャレンジ。 */
-          this.sendChallenge();
-        } else if (msg.must_call_draw_card || this.player.willDraw()) {
+          const willChallenge = this.player.willChallenge();
+          this.sendChallenge(willChallenge);
+          /* チャレンジする場合は、以降の処理(というかDrawCard)不要。 */
+          if (willChallenge) { return; }
+        }
+
+        if (msg.must_call_draw_card || this.player.willDraw()) {
           /* カードを引かなければならない場合か、引きたい場合 → カードを引く。 */
           this.sendDrawCard();
         } else if (this.player.shouldYellUNO()) {
@@ -289,11 +294,13 @@ export namespace UnoClient {
                          msg);
     }
 
-    private sendChallenge() {
+    /* チャレンジの場合はチャレンジするかどうかで後のイベント送信をすべきかが決まるので、
+       外側の処理でもチャレンジするかどうかが保持できるように仕方なくフラグを受け取る。 */
+    private sendChallenge(willChallenge: boolean) {
       const msg: UnoConsts.Event.Message.Send.Challenge =
           this.isConnectionTestMode ?
           { is_challenge: true } :
-          { is_challenge: this.player.willChallenge() };
+          { is_challenge: willChallenge };
       if (isDebugMode) {
         console.log("[Send] challenge");
         console.log(msg);
