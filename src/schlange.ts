@@ -41,7 +41,11 @@ export class Schlange implements UnoPlayerInterface.PlayerInterface {
     this.removeCard(msg.card_play);
   }
 
-  public onReceivedSayUnoAndPlayDrawCard(msg: UnoConsts.Event.Message.Receive.SayUnoAndPlayDrawCard): void {;}
+  public onReceivedSayUnoAndPlayDrawCard(msg: UnoConsts.Event.Message.Receive.SayUnoAndPlayDrawCard): void {
+    if (msg.player !== this.myPlayerId) { return; }
+
+    this.removeCard(msg.card_play);
+  }
 
   public onReceivedPointedNotSayUno(msg: UnoConsts.Event.Message.Receive.PointedNotSayUno): void {;}
 
@@ -64,8 +68,7 @@ export class Schlange implements UnoPlayerInterface.PlayerInterface {
     if (msg.must_call_draw_card) { return; }
 
     const tableCard = msg.card_before;
-    // this.myCards = msg.card_of_player; // TODO: 引いたカードや出したカードは別で通知されるから、ここはいらない？
-    this.legalSubmissions = this.myCards.filter(card => this.isLegal(card, tableCard));
+    this.legalSubmissions = this.myCards.filter(card => UnoUtils.isLegal(card, tableCard));
   }
 
   public onReceivedPublicCard(msg: UnoConsts.Event.Message.Receive.PublicCard): void {;}
@@ -176,20 +179,12 @@ export class Schlange implements UnoPlayerInterface.PlayerInterface {
   private myPlayerId: string = '';
   private canSubmitDrawnCard: boolean = false;
 
-  private isLegal(card: UnoConsts.Card, tableCard: UnoConsts.Card) {
-    if (card.color === tableCard.color) { return true; }
-    if (card.number && tableCard.number && (card.number === tableCard.number)) { return true; }
-    if (card.special && tableCard.special && (card.special === tableCard.special)) { return true; }
-    return false;
-  }
-
   private removeCard(card: UnoConsts.Card) {
     for (let i = 0; i < this.myCards.length; i++) {
       if (UnoUtils.isSameCard(this.myCards[i], card)) {
         this.myCards.splice(i, 1);
-        break;
+        return;
       }
     }
-    assert(false);
   }
 }
