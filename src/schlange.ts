@@ -1,4 +1,5 @@
 import * as assert from "assert";
+import { getEffectiveTypeParameterDeclarations } from "typescript";
 import { UnoConsts } from "./consts";
 import { UnoPlayerInterface } from "./player_interface";
 import { UnoUtils } from "./utils";
@@ -131,6 +132,13 @@ export class Schlange implements UnoPlayerInterface.PlayerInterface {
     return this.myCards.length == 2;
   }
 
+  static readonly evalMin = 0;
+  static readonly evalWildDraw4 = 1;
+  static readonly evalWild = 2;
+  static readonly evalOtherWild = 3;
+  static readonly evalAction = 4;
+  static readonly evalNumber = 5;
+
   public submitCard(): UnoConsts.Card {
     assert(this.legalSubmissions.length > 0);
 
@@ -138,30 +146,30 @@ export class Schlange implements UnoPlayerInterface.PlayerInterface {
       return this.legalSubmissions[0];
     }
 
-    let bestIdx = 0;
-    let bestScore = -1000000;
+    let bestIdx = -1;
+    let bestScore = Schlange.evalMin;
 
     /* 各着手の評価値を計算して、最良の着手を取る。 */
     this.legalSubmissions.forEach((card, idx) => {
       let score: number;
       if (card.number) {
-        /* 数字カードなら、(書かれている数字)を評価値とする。 */
-        score = card.number;
+        /* 数字カード。 */
+        score = (card.number + 1) * Schlange.evalNumber;
       } else if (card.color !== UnoConsts.Color.Black && card.color !== UnoConsts.Color.White) {
-        /* ワイルド以外の記号カードなら、20点を評価値とする。 */
-        score = 20;
+        /* ワイルド以外の記号カード。 */
+        score = Schlange.evalAction;
       } else {
-        /* ワイルド系なら、ワイルドは-40、ワイルドドロー4は-100、他は-50とする。 */
+        /* ワイルド系。 */
         assert(card.special);
         switch (card.special) {
           case UnoConsts.Action.Wild:
-            score = -40;
+            score = Schlange.evalWild;
             break;
           case UnoConsts.Action.WildDraw4:
-            score = -100;
+            score = Schlange.evalWildDraw4;
             break;
           default:
-            score = -50;
+            score = Schlange.evalOtherWild;
             break;
         }
       }
