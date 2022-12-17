@@ -19,6 +19,7 @@ export namespace UnoUtils {
   }
 
   export function isLegal(card: UnoConsts.Card, tableCard: UnoConsts.Card) {
+    if (card.color === UnoConsts.Color.Black || card.color === UnoConsts.Color.White) { return true; }
     if (card.color === tableCard.color) { return true; }
     if (card.number && tableCard.number && (card.number === tableCard.number)) { return true; }
     if (card.special && tableCard.special && (card.special === tableCard.special)) { return true; }
